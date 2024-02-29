@@ -1,4 +1,5 @@
 {
+  "verbose": true,
   "preset": "ts-jest",
   "testEnvironment": "node",
   "roots": ["__test__"],

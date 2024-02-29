@@ -1,6 +1,8 @@
+// src/index.ts
 import { launchOnionRouters } from "./onionRouters/launchOnionRouters";
 import { launchRegistry } from "./registry/registry";
 import { launchUsers } from "./users/launchUsers";
+import { REGISTRY_PORT } from "./config";
 
 export async function launchNetwork(nbNodes: number, nbUsers: number) {
   // launch node registry

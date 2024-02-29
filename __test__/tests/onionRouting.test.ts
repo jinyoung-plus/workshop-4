@@ -25,26 +25,26 @@ const { validateEncryption } = require("./utils");
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
 async function closeAllServers(
-  servers: http.Server<
-    typeof http.IncomingMessage,
-    typeof http.ServerResponse
-  >[]
+    servers: http.Server<
+        typeof http.IncomingMessage,
+        typeof http.ServerResponse
+    >[]
 ) {
   await Promise.all(
-    servers.map((server) =>
-      server.close(() => {
-        server.closeAllConnections();
-      })
-    )
+      servers.map((server) =>
+          server.close(() => {
+            server.closeAllConnections();
+          })
+      )
   );
 
   await delay(100);
 }
 
 async function sendMessage(
-  userPort: number,
-  message: string,
-  destinationUserId: number
+    userPort: number,
+    message: string,
+    destinationUserId: number
 ) {
   await fetch(`http://localhost:${userPort}/sendMessage`, {
     method: "POST",
@@ -60,72 +60,72 @@ async function sendMessage(
 
 async function getLastMessageDestination(nodePort: number) {
   const lastMessageDestination = await fetch(
-    `http://localhost:${nodePort}/getLastMessageDestination`
+      `http://localhost:${nodePort}/getLastMessageDestination`
   )
-    .then((res) => res.json() as any)
-    .then((json) => json?.result as number | null);
+      .then((res) => res.json() as any)
+      .then((json) => json?.result as number | null);
 
   return lastMessageDestination;
 }
 
 async function getLastReceivedEncryptedMessage(nodePort: number) {
   const lastReceivedEncryptedMessage = await fetch(
-    `http://localhost:${nodePort}/getLastReceivedEncryptedMessage`
+      `http://localhost:${nodePort}/getLastReceivedEncryptedMessage`
   )
-    .then((res) => res.json() as any)
-    .then((json) => json?.result as string | null);
+      .then((res) => res.json() as any)
+      .then((json) => json?.result as string | null);
 
   return lastReceivedEncryptedMessage;
 }
 
 async function getLastReceivedDecryptedMessage(nodePort: number) {
   const lastReceivedDecryptedMessage = await fetch(
-    `http://localhost:${nodePort}/getLastReceivedDecryptedMessage`
+      `http://localhost:${nodePort}/getLastReceivedDecryptedMessage`
   )
-    .then((res) => res.json() as any)
-    .then((json) => json?.result as string | null);
+      .then((res) => res.json() as any)
+      .then((json) => json?.result as string | null);
 
   return lastReceivedDecryptedMessage;
 }
 
 async function getPrivateKey(nodePort: number) {
   const strPrvKey = await fetch(`http://localhost:${nodePort}/getPrivateKey`)
-    .then((res) => res.json())
-    .then((json: any) => json.result as string);
+      .then((res) => res.json())
+      .then((json: any) => json.result as string);
 
   return strPrvKey;
 }
 
 async function getLastSentMessage(userPort: number) {
   const lastSentMessage = await fetch(
-    `http://localhost:${userPort}/getLastSentMessage`
+      `http://localhost:${userPort}/getLastSentMessage`
   )
-    .then((res) => res.json() as any)
-    .then((json) => json?.result as string | null);
+      .then((res) => res.json() as any)
+      .then((json) => json?.result as string | null);
 
   return lastSentMessage;
 }
 async function getLastReceivedMessage(userPort: number) {
   const lastReceivedMessage = await fetch(
-    `http://localhost:${userPort}/getLastReceivedMessage`
+      `http://localhost:${userPort}/getLastReceivedMessage`
   )
-    .then((res) => res.json() as any)
-    .then((json) => json?.result as string | null);
+      .then((res) => res.json() as any)
+      .then((json) => json?.result as string | null);
 
   return lastReceivedMessage;
 }
 async function getLastCircuit(userPort: number) {
   const circuit = await fetch(`http://localhost:${userPort}/getLastCircuit`)
-    .then((res) => res.json())
-    .then((json: any) => json.result as number[]);
+      .then((res) => res.json())
+      .then((json: any) => json.result as number[]);
 
   return circuit;
 }
 
 async function getNodeRegistry() {
   const nodes = await fetch(`http://localhost:${REGISTRY_PORT}/getNodeRegistry`)
-    .then((res) => res.json() as Promise<GetNodeRegistryBody>)
-    .then((json) => json.nodes);
+      .then((res) => res.json() as Promise<GetNodeRegistryBody>)
+      .then((json) => json.nodes);
 
   return nodes;
 }
@@ -134,8 +134,8 @@ describe("Onion Routing", () => {
   describe("Project is setup correctly - 4 pt", () => {
     describe("Can start a specific number of nodes and users - 1 pt", () => {
       let servers: http.Server<
-        typeof http.IncomingMessage,
-        typeof http.ServerResponse
+          typeof http.IncomingMessage,
+          typeof http.ServerResponse
       >[] = [];
 
       afterEach(async () => {
@@ -146,18 +146,18 @@ describe("Onion Routing", () => {
         servers = await launchNetwork(1, 1);
 
         const isNodeLive = await fetch(
-          `http://localhost:${BASE_ONION_ROUTER_PORT + 0}/status`
+            `http://localhost:${BASE_ONION_ROUTER_PORT + 0}/status`
         )
-          .then((res) => res.text())
-          .then((text) => text === "live");
+            .then((res) => res.text())
+            .then((text) => text === "live");
 
         expect(isNodeLive).toBeTruthy();
 
         const isUserLive = await fetch(
-          `http://localhost:${BASE_USER_PORT + 0}/status`
+            `http://localhost:${BASE_USER_PORT + 0}/status`
         )
-          .then((res) => res.text())
-          .then((text) => text === "live");
+            .then((res) => res.text())
+            .then((text) => text === "live");
 
         expect(isUserLive).toBeTruthy();
       });
@@ -167,20 +167,20 @@ describe("Onion Routing", () => {
 
         for (let index = 0; index < 10; index++) {
           const isNodeLive = await fetch(
-            `http://localhost:${BASE_ONION_ROUTER_PORT + index}/status`
+              `http://localhost:${BASE_ONION_ROUTER_PORT + index}/status`
           )
-            .then((res) => res.text())
-            .then((text) => text === "live");
+              .then((res) => res.text())
+              .then((text) => text === "live");
 
           expect(isNodeLive).toBeTruthy();
         }
 
         for (let index = 0; index < 2; index++) {
           const isUserLive = await fetch(
-            `http://localhost:${BASE_USER_PORT + index}/status`
+              `http://localhost:${BASE_USER_PORT + index}/status`
           )
-            .then((res) => res.text())
-            .then((text) => text === "live");
+              .then((res) => res.text())
+              .then((text) => text === "live");
 
           expect(isUserLive).toBeTruthy();
         }
@@ -191,20 +191,20 @@ describe("Onion Routing", () => {
 
         for (let index = 0; index < 2; index++) {
           const isNodeLive = await fetch(
-            `http://localhost:${BASE_ONION_ROUTER_PORT + index}/status`
+              `http://localhost:${BASE_ONION_ROUTER_PORT + index}/status`
           )
-            .then((res) => res.text())
-            .then((text) => text === "live");
+              .then((res) => res.text())
+              .then((text) => text === "live");
 
           expect(isNodeLive).toBeTruthy();
         }
 
         for (let index = 0; index < 10; index++) {
           const isUserLive = await fetch(
-            `http://localhost:${BASE_USER_PORT + index}/status`
+              `http://localhost:${BASE_USER_PORT + index}/status`
           )
-            .then((res) => res.text())
-            .then((text) => text === "live");
+              .then((res) => res.text())
+              .then((text) => text === "live");
 
           expect(isUserLive).toBeTruthy();
         }
@@ -214,10 +214,10 @@ describe("Onion Routing", () => {
         servers = await launchNetwork(2, 10);
 
         const isRegistryLive = await fetch(
-          `http://localhost:${REGISTRY_PORT}/status`
+            `http://localhost:${REGISTRY_PORT}/status`
         )
-          .then((res) => res.text())
-          .then((text) => text === "live");
+            .then((res) => res.text())
+            .then((text) => text === "live");
 
         expect(isRegistryLive).toBeTruthy();
       });
@@ -238,7 +238,7 @@ describe("Onion Routing", () => {
       it("calling /getLastReceivedEncryptedMessage on a node before it received anything returns { result: null }", async () => {
         // getLastReceivedEncryptedMessage
         const lastReceivedEncryptedMessage =
-          await getLastReceivedEncryptedMessage(BASE_ONION_ROUTER_PORT + 0);
+            await getLastReceivedEncryptedMessage(BASE_ONION_ROUTER_PORT + 0);
 
         expect(lastReceivedEncryptedMessage).toBeNull();
       });
@@ -246,7 +246,7 @@ describe("Onion Routing", () => {
       it("calling /getLastReceivedDecryptedMessage on a node before it received anything returns { result: null }", async () => {
         // getLastReceivedDecryptedMessage
         const lastReceivedDecryptedMessage =
-          await getLastReceivedDecryptedMessage(BASE_ONION_ROUTER_PORT + 9);
+            await getLastReceivedDecryptedMessage(BASE_ONION_ROUTER_PORT + 9);
 
         expect(lastReceivedDecryptedMessage).toBeNull();
       });
@@ -254,7 +254,7 @@ describe("Onion Routing", () => {
       it("calling /getLastMessageDestination on a node before it received anything returns { result: null }", async () => {
         // getLastMessageDestination
         const lastMessageDestination = await getLastMessageDestination(
-          BASE_ONION_ROUTER_PORT + 3
+            BASE_ONION_ROUTER_PORT + 3
         );
 
         expect(lastMessageDestination).toBeNull();
@@ -263,7 +263,7 @@ describe("Onion Routing", () => {
       it("calling /getLastMessageDestination on a node before it received anything returns { result: null }", async () => {
         // getLastMessageDestination
         const lastMessageDestination = await getLastMessageDestination(
-          BASE_ONION_ROUTER_PORT + 1
+            BASE_ONION_ROUTER_PORT + 1
         );
 
         expect(lastMessageDestination).toBeNull();
@@ -272,7 +272,7 @@ describe("Onion Routing", () => {
       it("calling /getLastReceivedMessage on a user before it received anything returns { result: null }", async () => {
         // getLastReceivedMessage
         const lastReceivedMessage = await getLastReceivedMessage(
-          BASE_USER_PORT + 1
+            BASE_USER_PORT + 1
         );
 
         expect(lastReceivedMessage).toBeNull();
@@ -316,7 +316,7 @@ describe("Onion Routing", () => {
           const node = nodes.find((_n) => _n.nodeId === index);
 
           expect(
-            node !== undefined && /^[A-Za-z0-9+/]{392}$/.test(node.pubKey)
+              node !== undefined && /^[A-Za-z0-9+/]{392}$/.test(node.pubKey)
           ).toBeTruthy();
         }
       });
@@ -340,7 +340,7 @@ describe("Onion Routing", () => {
           const node = nodes[index];
 
           const strPrvKey = await getPrivateKey(
-            BASE_ONION_ROUTER_PORT + node.nodeId
+              BASE_ONION_ROUTER_PORT + node.nodeId
           );
 
           expect(/^[-A-Za-z0-9+/]*={0,3}$/.test(strPrvKey)).toBeTruthy();
@@ -373,16 +373,16 @@ describe("Onion Routing", () => {
       it("Each user can receive a message", async () => {
         for (let index = 0; index < 2; index++) {
           const response = await fetch(
-            `http://localhost:${BASE_USER_PORT + index}/message`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                message: "Hello user",
-              }),
-            }
+              `http://localhost:${BASE_USER_PORT + index}/message`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  message: "Hello user",
+                }),
+              }
           ).then((res) => res.text());
 
           expect(response).toBe("success");
@@ -391,8 +391,8 @@ describe("Onion Routing", () => {
 
       it("After receiving a message, a user's /getLastReceivedMessage route returns the right message", async () => {
         const randomNumber = crypto
-          .getRandomValues(new Uint32Array(1))[0]
-          .toString();
+            .getRandomValues(new Uint32Array(1))[0]
+            .toString();
 
         const randomMessage = `Hello user, my favourite number is ${randomNumber}`;
 
@@ -407,7 +407,7 @@ describe("Onion Routing", () => {
         });
 
         const receivedMessage = await getLastReceivedMessage(
-          BASE_USER_PORT + 0
+            BASE_USER_PORT + 0
         );
 
         expect(receivedMessage).toBe(randomMessage);
@@ -465,8 +465,8 @@ describe("Onion Routing", () => {
       const b64Message = btoa("Hello World!!");
 
       const encrypted = await rsaEncrypt(
-        b64Message,
-        await exportPubKey(publicKey)
+          b64Message,
+          await exportPubKey(publicKey)
       );
       const decrypted = await rsaDecrypt(encrypted, privateKey);
 
@@ -585,36 +585,36 @@ describe("Onion Routing", () => {
 
       for (let index = 0; index < circuit.length - 1; index++) {
         const nextDestination = await getLastMessageDestination(
-          BASE_ONION_ROUTER_PORT + circuit[index]
+            BASE_ONION_ROUTER_PORT + circuit[index]
         );
 
         const actualNextDestination =
-          BASE_ONION_ROUTER_PORT + circuit[index + 1];
+            BASE_ONION_ROUTER_PORT + circuit[index + 1];
         expect(nextDestination).toBe(actualNextDestination);
 
         const lastReceivedEncryptedMessage =
-          await getLastReceivedEncryptedMessage(
-            BASE_ONION_ROUTER_PORT + circuit[index]
-          );
+            await getLastReceivedEncryptedMessage(
+                BASE_ONION_ROUTER_PORT + circuit[index]
+            );
 
         if (lastDecrypted) {
           expect(lastReceivedEncryptedMessage).toBe(lastDecrypted);
         }
 
         expect(
-          lastReceivedEncryptedMessage !== null &&
+            lastReceivedEncryptedMessage !== null &&
             /^[A-Za-z0-9+/=]*$/.test(lastReceivedEncryptedMessage)
         ).toBeTruthy();
 
         const lastReceivedDecryptedMessage =
-          await getLastReceivedDecryptedMessage(
-            BASE_ONION_ROUTER_PORT + circuit[index]
-          );
+            await getLastReceivedDecryptedMessage(
+                BASE_ONION_ROUTER_PORT + circuit[index]
+            );
 
         lastDecrypted = lastReceivedDecryptedMessage;
 
         expect(
-          lastReceivedDecryptedMessage !== null &&
+            lastReceivedDecryptedMessage !== null &&
             /^[A-Za-z0-9+/=]*$/.test(lastReceivedDecryptedMessage)
         ).toBeTruthy();
       }
@@ -622,25 +622,25 @@ describe("Onion Routing", () => {
       // last node
       {
         const lastDestination = await getLastMessageDestination(
-          BASE_ONION_ROUTER_PORT + circuit[circuit.length - 1]
+            BASE_ONION_ROUTER_PORT + circuit[circuit.length - 1]
         );
         const actualLastDestination = BASE_USER_PORT + 1;
         expect(lastDestination).toBe(actualLastDestination);
 
         const lastReceivedEncryptedMessage =
-          await getLastReceivedEncryptedMessage(
-            BASE_ONION_ROUTER_PORT + circuit[circuit.length - 1]
-          );
+            await getLastReceivedEncryptedMessage(
+                BASE_ONION_ROUTER_PORT + circuit[circuit.length - 1]
+            );
 
         expect(
-          lastReceivedEncryptedMessage !== null &&
+            lastReceivedEncryptedMessage !== null &&
             /^[A-Za-z0-9+/=]*$/.test(lastReceivedEncryptedMessage)
         ).toBeTruthy();
 
         const lastReceivedDecryptedMessage =
-          await getLastReceivedDecryptedMessage(
-            BASE_ONION_ROUTER_PORT + circuit[circuit.length - 1]
-          );
+            await getLastReceivedDecryptedMessage(
+                BASE_ONION_ROUTER_PORT + circuit[circuit.length - 1]
+            );
         expect(lastReceivedDecryptedMessage).toBe("Hello world");
       }
 
@@ -651,32 +651,32 @@ describe("Onion Routing", () => {
 
     it("The right message is passed to each node - 1pt", async () => {
       await sendMessage(
-        BASE_USER_PORT + 0,
-        "We are finally testing the whole decentralised network !",
-        1
+          BASE_USER_PORT + 0,
+          "We are finally testing the whole decentralised network !",
+          1
       );
 
       const circuit = await getLastCircuit(BASE_USER_PORT + 0);
 
       for (let index = 0; index < circuit.length - 1; index++) {
         const lastReceivedEncryptedMessage =
-          await getLastReceivedEncryptedMessage(
-            BASE_ONION_ROUTER_PORT + circuit[index]
-          );
+            await getLastReceivedEncryptedMessage(
+                BASE_ONION_ROUTER_PORT + circuit[index]
+            );
 
         const lastReceivedDecryptedMessage =
-          await getLastReceivedDecryptedMessage(
-            BASE_ONION_ROUTER_PORT + circuit[index]
-          );
+            await getLastReceivedDecryptedMessage(
+                BASE_ONION_ROUTER_PORT + circuit[index]
+            );
 
         const privateKey = await getPrivateKey(
-          BASE_ONION_ROUTER_PORT + circuit[index]
+            BASE_ONION_ROUTER_PORT + circuit[index]
         );
 
         const isValid = await validateEncryption(
-          lastReceivedEncryptedMessage,
-          lastReceivedDecryptedMessage,
-          privateKey
+            lastReceivedEncryptedMessage,
+            lastReceivedDecryptedMessage,
+            privateKey
         );
 
         expect(isValid).toBeTruthy();
