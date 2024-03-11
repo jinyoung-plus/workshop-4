@@ -1,12 +1,18 @@
 // src/users/user.ts
 import bodyParser from "body-parser";
 import express from "express";
-import { BASE_USER_PORT } from "../config";
 import fetch from 'node-fetch';
+import { BASE_USER_PORT, REGISTRY_PORT, BASE_ONION_ROUTER_PORT } from "../config";
+import { rsaEncrypt, importPubKey } from "../crypto";
 
 export type SendMessageBody = {
   message: string;
   destinationUserId: number;
+};
+
+type NodeInfo = {
+  nodeId: number;
+  pubKey: string;
 };
 
 export async function user(userId: number) {
@@ -14,88 +20,75 @@ export async function user(userId: number) {
   app.use(express.json());
   app.use(bodyParser.json());
 
-  // 각 사용자 인스턴스의 상태를 독립적으로 관리
   let userState = {
-    lastReceivedEncryptedMessage: null as string | null,
-    lastReceivedDecryptedMessage: null as string | null,
-    lastMessageDestination: null as string | null,
-    lastReceivedMessage: null as string | null, // 추가: 받은 마지막 메시지
-    lastSentMessage: null as string | null, // 추가: 보낸 마지막 메시지
+    lastReceivedMessage: null as string | null,
+    lastSentMessage: null as string | null,
+    circuit: [] as number[], // 회로 정보를 저장할 상태
   };
 
-  // 상태 확인 라우트
-  app.get("/status", (req, res) => {
-    console.log(`Status check received for user ${userId}`);
+  app.get("/status", (_req, res) => {
     res.send("live");
   });
 
-  // 마지막으로 받은 메시지를 반환하는 라우트
-  app.get("/getLastReceivedMessage", (req, res) => {
-    res.status(200).json({ result: userState.lastReceivedMessage });
+  app.get("/getLastReceivedMessage", (_req, res) => {
+    res.json({ result: userState.lastReceivedMessage });
   });
 
-  // 마지막으로 보낸 메시지를 반환하는 라우트
-  app.get("/getLastSentMessage", (req, res) => {
-    res.status(200).json({ result: userState.lastSentMessage });
+  app.get("/getLastSentMessage", (_req, res) => {
+    res.json({ result: userState.lastSentMessage });
   });
 
-  // Handle incoming messages and respond with "success"
-  app.post("/message", (req, res) => {
-    // Here, you're expecting a message sent directly to this endpoint.
-    // You need to modify this to align with your test case expectations.
-    const { message } = req.body;
-    userState.lastReceivedMessage = message; // 상태 업데이트
-    console.log(`Received message: ${message}`);
+  app.post("/receiveMessage", (req, res) => {
+    const { message } = req.body as SendMessageBody;
     userState.lastReceivedMessage = message;
+    res.json({ result: "Message received successfully" });
+  });
+
+  app.post("/message", (req, res) => {
+    // 요청에서 메시지를 추출
+    const { message } = req.body;
+    userState.lastReceivedMessage = message;
+    // 성공 응답 반환
     res.send("success");
   });
 
-  // 메시지 수신 라우트 (예시)
-  app.post("/receiveMessage", (req, res) => {
-    const { message, destinationUserId } = req.body as SendMessageBody;
-    if (destinationUserId === userId) {
-      userState.lastReceivedMessage = message;
-      // 암호화 및 복호화 로직은 여기에 구현할 수 있습니다.
-      userState.lastReceivedDecryptedMessage = message; // 예시: 복호화 로직 후
-      userState.lastReceivedEncryptedMessage = "encrypted-" + message; // 예시: 암호화된 메시지
-      res.status(200).json({ result: "Message received successfully" });
-    } else {
-      res.status(400).json({ error: "Wrong destination user ID" });
-    }
-  });
-
-  // 메시지 송신 라우트 (예시)
+  // 메시지 송신 라우트
   app.post("/sendMessage", async (req, res) => {
     const { message, destinationUserId } = req.body as SendMessageBody;
     userState.lastSentMessage = message;
 
-    // 목적지 사용자의 서버 주소를 구성합니다.
-    const destinationUrl = `http://localhost:${BASE_USER_PORT + destinationUserId}/receiveMessage`;
-
     try {
-      // 목적지 사용자에게 메시지를 전송합니다.
-      const response = await fetch(destinationUrl, {
+      const response = await fetch(`http://localhost:${REGISTRY_PORT}/getNodeRegistry`);
+      const { nodes } = await response.json();
+
+      // 무작위로 3개의 노드를 선택합니다.
+      const selectedNodes = nodes.sort(() => 0.5 - Math.random()).slice(0, 3);
+      userState.circuit = selectedNodes.map((node: NodeInfo) => node.nodeId); // 수정: 명시적 타입 지정
+
+      // 선택된 각 노드의 RSA 공개키로 메시지를 순차적으로 암호화합니다.
+      let encryptedMessage = message;
+      for (const node of selectedNodes) {
+        encryptedMessage = await rsaEncrypt(encryptedMessage, node.pubKey);
+      }
+
+      // 첫 번째 양파 라우터로 메시지를 전송합니다.
+      const entryNode = selectedNodes[0];
+      const exitNode = selectedNodes[selectedNodes.length - 1]; // 수정: exitNode 선언
+      await fetch(`http://localhost:${BASE_ONION_ROUTER_PORT + entryNode.nodeId}/routeMessage`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message, // 전송할 메시지
-          destinationUserId, // 목적지 사용자 ID
+          encryptedMessage,
+          nextRouter: selectedNodes[1] ? selectedNodes[1].nodeId : undefined, // 수정: 다음 라우터의 nodeId를 전달
+          exitNode: exitNode.nodeId, // 수정: 출구 노드의 nodeId를 전달
+          destinationUserId,
         }),
       });
 
-      if (response.ok) {
-        // 메시지 전송이 성공했을 경우의 처리를 여기에 작성합니다.
-        res.status(200).json({ result: "Message sent successfully" });
-      } else {
-        // 메시지 전송에 실패했을 경우의 처리를 여기에 작성합니다.
-        res.status(500).json({ error: "Failed to send message" });
-      }
+      res.status(200).json({ result: "Message sent successfully", circuit: userState.circuit });
     } catch (error) {
-      // HTTP 요청 중 발생한 오류를 처리합니다.
-      console.error("Failed to send message:", error);
-      res.status(500).json({ error: "Failed to send message due to server error" });
+      console.error("Error sending message through the onion network:", error);
+      res.status(500).json({ error: "Failed to send message through the onion network" });
     }
   });
 
@@ -105,3 +98,4 @@ export async function user(userId: number) {
 
   return server;
 }
+

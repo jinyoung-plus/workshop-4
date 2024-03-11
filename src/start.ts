@@ -1,4 +1,4 @@
-//src/start._ts
+// src/start._ts
 import { launchNetwork } from ".";
 
 function main() {
